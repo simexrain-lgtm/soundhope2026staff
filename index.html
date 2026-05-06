@@ -682,19 +682,26 @@ body {
       <span id="claudePanelArrow" style="font-size:10px;color:#6366f1;transition:transform 0.2s;">▶</span>
     </div>
     <div id="claudePanelBody" style="display:none;padding:14px 16px;">
-      <p style="font-size:12px;color:#a5b4fc;line-height:1.7;margin-bottom:12px;">
-        ① 下の「📤 データをコピー」を押す<br>
-        ② <a href="https://claude.ai" target="_blank" style="color:#818cf8;">claude.ai</a> を開いてそのまま貼り付けて指示する<br>
-        　例：<em style="color:#c7d2fe;">「ステージ関係のタスクを5件追加して」</em><br>
-        　例：<em style="color:#c7d2fe;">「〆の未完了タスクを一覧にして」</em><br>
-        ③ Claudeが返してくれたJSONを「📥 データを読み込む」で反映
+      <p style="font-size:12px;color:#a5b4fc;line-height:1.9;margin-bottom:14px;">
+        <strong style="color:#c7d2fe;">① データをダウンロード</strong><br>
+        　下の「📤 ダウンロード」を押す → <code style="background:#1e1e3a;padding:1px 5px;border-radius:3px;">tasks.json</code> が保存される<br>
+        <strong style="color:#c7d2fe;">② Claude.ai に貼り付けて指示</strong><br>
+        　<a href="https://claude.ai" target="_blank" style="color:#818cf8;">claude.ai</a> でそのファイルを添付して指示する<br>
+        　例：<em style="color:#94a3b8;">「ステージ関係のタスクを5件追加して」</em><br>
+        　例：<em style="color:#94a3b8;">「〆の未完了タスクを一覧にして」</em><br>
+        <strong style="color:#c7d2fe;">③ 返ってきたJSONを貼り付けて反映</strong><br>
+        　Claudeが返したJSONテキストを下の枠に貼り付けて「反映する」を押す
       </p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button onclick="claudeCopyData()" style="font-size:12px;padding:8px 16px;border-radius:6px;border:1px solid #3730a3;background:rgba(99,102,241,0.2);color:#a5b4fc;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:background 0.15s;" onmouseover="this.style.background='rgba(99,102,241,0.35)'" onmouseout="this.style.background='rgba(99,102,241,0.2)'">📤 データをコピー</button>
-        <label style="font-size:12px;padding:8px 16px;border-radius:6px;border:1px solid #3730a3;background:rgba(99,102,241,0.2);color:#a5b4fc;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">
-          📥 データを読み込む
-          <input type="file" accept=".json" style="display:none" onchange="claudeImport(event)">
-        </label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+        <button onclick="claudeDownload()" style="font-size:12px;padding:9px 18px;border-radius:6px;border:1px solid #3730a3;background:rgba(99,102,241,0.2);color:#a5b4fc;cursor:pointer;font-family:'Noto Sans JP',sans-serif;" onmouseover="this.style.background='rgba(99,102,241,0.35)'" onmouseout="this.style.background='rgba(99,102,241,0.2)'">📤 ダウンロード</button>
+      </div>
+      <div style="border-top:1px solid #2e2e5a;padding-top:14px;">
+        <div style="font-size:11px;color:#6366f1;margin-bottom:8px;font-weight:700;">③ Claudeから受け取ったJSONをここに貼り付け</div>
+        <textarea id="claudePasteArea" placeholder='{"tasks":[...]} の形式で貼り付けてください' style="width:100%;min-height:80px;font-size:11px;padding:8px 10px;border-radius:6px;border:1px solid #3730a3;background:#0a0a1a;color:#c7d2fe;font-family:monospace;resize:vertical;line-height:1.4;" onpaste="setTimeout(()=>claudeCheckPaste(),100)"></textarea>
+        <div style="margin-top:8px;display:flex;gap:8px;">
+          <button onclick="claudePasteApply()" style="font-size:12px;padding:8px 20px;border-radius:6px;border:none;background:#4f46e5;color:#fff;cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-weight:700;">✓ 反映する</button>
+          <button onclick="document.getElementById('claudePasteArea').value=''" style="font-size:12px;padding:8px 14px;border-radius:6px;border:1px solid #3730a3;background:transparent;color:#a5b4fc;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">クリア</button>
+        </div>
       </div>
       <div id="claudePanelMsg" style="display:none;margin-top:10px;font-size:12px;padding:8px 12px;border-radius:6px;"></div>
     </div>
@@ -1590,27 +1597,51 @@ function toggleClaudePanel(){
   document.getElementById('claudePanelBody').style.display = claudePanelOpen ? 'block' : 'none';
   document.getElementById('claudePanelArrow').style.transform = claudePanelOpen ? 'rotate(90deg)' : '';
 }
-function claudeCopyData(){
+
+function claudeDownload(){
   const data = {
     instruction: "以下のSOUNDHOPE FEST. 2026タスク管理データを編集してください。変更後は同じJSON形式で返してください。",
     tasks, cats, fleaEntries, nid,
     today: new Date().toISOString().slice(0,10)
   };
-  const json = JSON.stringify(data, null, 2);
-  navigator.clipboard.writeText(json).catch(()=>{
-    const ta = document.createElement('textarea');
-    ta.value = json; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-  }).finally ? navigator.clipboard.writeText(json).then(()=>{}).catch(()=>{}) : null;
-  navigator.clipboard.writeText(json).then(()=>{
-    showClaudeMsg('コピーしました！claude.ai に貼り付けて指示してください', 'ok');
-  }).catch(()=>{
-    const ta = document.createElement('textarea');
-    ta.value = json; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-    showClaudeMsg('コピーしました！claude.ai に貼り付けて指示してください', 'ok');
-  });
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `soundhope_tasks_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  showClaudeMsg('ダウンロードしました！claude.ai でファイルを添付して指示してください', 'ok');
 }
+
+function claudeCheckPaste(){
+  // 貼り付け時に自動でJSONかチェック
+  const val = document.getElementById('claudePasteArea').value.trim();
+  if(val.startsWith('{') && val.includes('"tasks"')){
+    document.getElementById('claudePasteArea').style.borderColor = '#22c55e';
+  }
+}
+
+function claudePasteApply(){
+  const val = document.getElementById('claudePasteArea').value.trim();
+  if(!val){ showClaudeMsg('JSONを貼り付けてください', 'err'); return; }
+  try {
+    // コードブロック（```json ... ```）で包まれてても対応
+    const clean = val.replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
+    const d = JSON.parse(clean);
+    if(!d.tasks) throw new Error('tasksが見つかりません');
+    if(!confirm(`Claudeから受け取ったデータを反映しますか？\n（現在${tasks.length}件 → ${d.tasks.length}件）`)) return;
+    tasks = d.tasks;
+    if(d.nid) nid = d.nid;
+    if(d.fleaEntries) fleaEntries = d.fleaEntries;
+    addLog('Claudeによるデータ更新を反映');
+    saveLocal(); saveFleaLocal(); pushAfterChange(); render(); renderChangelog();
+    document.getElementById('claudePasteArea').value = '';
+    document.getElementById('claudePasteArea').style.borderColor = '';
+    showClaudeMsg(`✅ 反映しました！タスク${tasks.length}件`, 'ok');
+  } catch(err){
+    showClaudeMsg('エラー: ' + err.message + '　※Claudeが返したJSONをそのまま貼り付けてください', 'err');
+  }
+}
+
 function claudeImport(e){
   const file = e.target.files[0]; if(!file) return;
   const r = new FileReader();
@@ -1618,17 +1649,18 @@ function claudeImport(e){
     try {
       const d = JSON.parse(ev.target.result);
       if(!d.tasks) throw new Error('tasksが見つかりません');
-      if(!confirm(`Claudeから受け取ったデータを反映しますか？\n（現在${tasks.length}件 → ${d.tasks.length}件）`)) return;
+      if(!confirm(`データを反映しますか？\n（現在${tasks.length}件 → ${d.tasks.length}件）`)) return;
       tasks = d.tasks;
       if(d.nid) nid = d.nid;
       if(d.fleaEntries) fleaEntries = d.fleaEntries;
       addLog('Claudeによるデータ更新を反映');
       saveLocal(); saveFleaLocal(); pushAfterChange(); render(); renderChangelog();
-      showClaudeMsg(`反映しました！タスク${tasks.length}件`, 'ok');
+      showClaudeMsg(`✅ 反映しました！タスク${tasks.length}件`, 'ok');
     } catch(err){ showClaudeMsg('読み込みエラー: ' + err.message, 'err'); }
   };
   r.readAsText(file); e.target.value='';
 }
+
 function showClaudeMsg(text, type){
   const el = document.getElementById('claudePanelMsg');
   el.textContent = text; el.style.display = 'block';
@@ -1636,7 +1668,7 @@ function showClaudeMsg(text, type){
   el.style.border = type==='ok' ? '1px solid #166534' : '1px solid #7f1d1d';
   el.style.color = type==='ok' ? '#86efac' : '#fca5a5';
   clearTimeout(el._t);
-  el._t = setTimeout(()=>{ el.style.display='none'; }, 5000);
+  el._t = setTimeout(()=>{ el.style.display='none'; }, 6000);
 }
 
 document.addEventListener('click', e=>{
