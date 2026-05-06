@@ -417,148 +417,6 @@ body {
   font-family: 'Noto Sans JP', sans-serif;
 }
 
-/* AI PANEL */
-.ai-panel {
-  margin-top: 18px;
-  background: linear-gradient(135deg, #0f0f1a, #1a1a2e);
-  border: 1px solid #2e2e5a;
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-.ai-panel-hdr {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  cursor: pointer;
-  user-select: none;
-  border-bottom: 1px solid #2e2e5a;
-}
-.ai-panel-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: #a5b4fc;
-  flex: 1;
-  letter-spacing: 0.5px;
-}
-.ai-panel-arrow { font-size: 10px; color: #6366f1; transition: transform 0.2s; }
-.ai-panel-arrow.open { transform: rotate(90deg); }
-.ai-panel-body { padding: 14px 16px; }
-.ai-suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.ai-suggestion {
-  font-size: 11px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  border: 1px solid #3730a3;
-  background: rgba(99,102,241,0.1);
-  color: #a5b4fc;
-  cursor: pointer;
-  font-family: 'Noto Sans JP', sans-serif;
-  transition: background 0.15s;
-  white-space: nowrap;
-}
-.ai-suggestion:hover { background: rgba(99,102,241,0.25); }
-.ai-input-row {
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-}
-.ai-input {
-  flex: 1;
-  font-size: 13px;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid #3730a3;
-  background: rgba(15,15,30,0.8);
-  color: #e0e7ff;
-  font-family: 'Noto Sans JP', sans-serif;
-  resize: none;
-  min-height: 44px;
-  max-height: 120px;
-  line-height: 1.5;
-  transition: border-color 0.15s;
-}
-.ai-input:focus { outline: none; border-color: #6366f1; }
-.ai-send {
-  font-size: 13px;
-  padding: 10px 16px;
-  border-radius: var(--radius-sm);
-  border: none;
-  background: #4f46e5;
-  color: #fff;
-  cursor: pointer;
-  font-family: 'Noto Sans JP', sans-serif;
-  font-weight: 700;
-  white-space: nowrap;
-  transition: background 0.15s;
-  height: 44px;
-}
-.ai-send:hover { background: #4338ca; }
-.ai-send:disabled { background: #3730a3; opacity: 0.5; cursor: not-allowed; }
-.ai-messages {
-  margin-top: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 400px;
-  overflow-y: auto;
-}
-.ai-msg {
-  border-radius: var(--radius-sm);
-  padding: 10px 14px;
-  font-size: 13px;
-  line-height: 1.6;
-}
-.ai-msg.user {
-  background: rgba(99,102,241,0.15);
-  border: 1px solid #3730a3;
-  color: #c7d2fe;
-  align-self: flex-end;
-  max-width: 85%;
-}
-.ai-msg.assistant {
-  background: rgba(15,15,30,0.6);
-  border: 1px solid #2e2e5a;
-  color: #e0e7ff;
-}
-.ai-msg.error {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid #7f1d1d;
-  color: #fca5a5;
-}
-.ai-thinking {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #6366f1;
-  padding: 8px 0;
-}
-.ai-thinking-dots span {
-  display: inline-block;
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: #6366f1;
-  animation: aiDot 1.2s infinite;
-  margin: 0 2px;
-}
-.ai-thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
-.ai-thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes aiDot { 0%,80%,100%{opacity:0.2;transform:scale(0.8)} 40%{opacity:1;transform:scale(1)} }
-.ai-applied {
-  font-size: 11px;
-  color: var(--green);
-  margin-top: 6px;
-  padding: 4px 10px;
-  background: rgba(34,197,94,0.1);
-  border-radius: 20px;
-  display: inline-block;
-}
 .flea-overlay {
   display: none; position: fixed; inset: 0;
   background: rgba(0,0,0,0.75); z-index: 150;
@@ -816,28 +674,29 @@ body {
     <div id="changelogItems" style="display:none"></div>
   </div>
 
-  <!-- AI操作パネル -->
-  <div class="ai-panel">
-    <div class="ai-panel-hdr" onclick="toggleAiPanel()">
+  <!-- Claude連携パネル -->
+  <div style="margin-top:18px;background:linear-gradient(135deg,#0f0f1a,#1a1a2e);border:1px solid #2e2e5a;border-radius:var(--radius);overflow:hidden;">
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #2e2e5a;cursor:pointer;" onclick="toggleClaudePanel()">
       <span>🤖</span>
-      <span class="ai-panel-title">AI アシスタント — タスクの追加・編集・確認</span>
-      <span class="ai-panel-arrow" id="aiPanelArrow">▶</span>
+      <span style="font-size:13px;font-weight:700;color:#a5b4fc;flex:1;letter-spacing:0.5px;">Claude に頼む — タスク追加・編集・確認</span>
+      <span id="claudePanelArrow" style="font-size:10px;color:#6366f1;transition:transform 0.2s;">▶</span>
     </div>
-    <div id="aiPanelBody" style="display:none">
-      <div class="ai-panel-body">
-        <div class="ai-suggestions">
-          <button class="ai-suggestion" onclick="aiSetPrompt('ステージ関係のタスクを5件追加して')">ステージ関係のタスクを追加</button>
-          <button class="ai-suggestion" onclick="aiSetPrompt('期日が過ぎているタスクを教えて')">期日超過タスクを確認</button>
-          <button class="ai-suggestion" onclick="aiSetPrompt('未完了のタスクを担当者別にまとめて')">担当者別まとめ</button>
-          <button class="ai-suggestion" onclick="aiSetPrompt('完了していないタスクの数を教えて')">進捗確認</button>
-          <button class="ai-suggestion" onclick="aiSetPrompt('告知・宣伝カテゴリにタスクを3件追加して')">告知タスク追加</button>
-        </div>
-        <div class="ai-input-row">
-          <textarea class="ai-input" id="aiInput" placeholder="例：ステージ関係のタスクを追加して　/　〆の担当タスクを教えて　/　フリマ準備タスクを整理して" rows="2"></textarea>
-          <button class="ai-send" id="aiSendBtn" onclick="aiSend()">送信</button>
-        </div>
-        <div class="ai-messages" id="aiMessages"></div>
+    <div id="claudePanelBody" style="display:none;padding:14px 16px;">
+      <p style="font-size:12px;color:#a5b4fc;line-height:1.7;margin-bottom:12px;">
+        ① 下の「📤 データをコピー」を押す<br>
+        ② <a href="https://claude.ai" target="_blank" style="color:#818cf8;">claude.ai</a> を開いてそのまま貼り付けて指示する<br>
+        　例：<em style="color:#c7d2fe;">「ステージ関係のタスクを5件追加して」</em><br>
+        　例：<em style="color:#c7d2fe;">「〆の未完了タスクを一覧にして」</em><br>
+        ③ Claudeが返してくれたJSONを「📥 データを読み込む」で反映
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="claudeCopyData()" style="font-size:12px;padding:8px 16px;border-radius:6px;border:1px solid #3730a3;background:rgba(99,102,241,0.2);color:#a5b4fc;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:background 0.15s;" onmouseover="this.style.background='rgba(99,102,241,0.35)'" onmouseout="this.style.background='rgba(99,102,241,0.2)'">📤 データをコピー</button>
+        <label style="font-size:12px;padding:8px 16px;border-radius:6px;border:1px solid #3730a3;background:rgba(99,102,241,0.2);color:#a5b4fc;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">
+          📥 データを読み込む
+          <input type="file" accept=".json" style="display:none" onchange="claudeImport(event)">
+        </label>
       </div>
+      <div id="claudePanelMsg" style="display:none;margin-top:10px;font-size:12px;padding:8px 12px;border-radius:6px;"></div>
     </div>
   </div>
 
@@ -1724,190 +1583,62 @@ document.getElementById('myName').addEventListener('input', ()=>{
   try { localStorage.setItem(LS_NAME, document.getElementById('myName').value); } catch(e){}
 });
 
-// ---- AI PANEL ----
-let aiPanelOpen = false;
-
-function toggleAiPanel(){
-  aiPanelOpen = !aiPanelOpen;
-  document.getElementById('aiPanelBody').style.display = aiPanelOpen ? 'block' : 'none';
-  document.getElementById('aiPanelArrow').className = 'ai-panel-arrow' + (aiPanelOpen ? ' open' : '');
+// ---- CLAUDE連携パネル ----
+let claudePanelOpen = false;
+function toggleClaudePanel(){
+  claudePanelOpen = !claudePanelOpen;
+  document.getElementById('claudePanelBody').style.display = claudePanelOpen ? 'block' : 'none';
+  document.getElementById('claudePanelArrow').style.transform = claudePanelOpen ? 'rotate(90deg)' : '';
 }
-
-function aiSetPrompt(text){
-  document.getElementById('aiInput').value = text;
-  document.getElementById('aiInput').focus();
-}
-
-function aiAddMessage(role, html){
-  const msgs = document.getElementById('aiMessages');
-  const div = document.createElement('div');
-  div.className = 'ai-msg ' + role;
-  div.innerHTML = html;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-  return div;
-}
-
-function aiShowThinking(){
-  const msgs = document.getElementById('aiMessages');
-  const div = document.createElement('div');
-  div.className = 'ai-thinking';
-  div.id = 'aiThinking';
-  div.innerHTML = `<span>AIが考え中</span><span class="ai-thinking-dots"><span></span><span></span><span></span></span>`;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-
-function aiHideThinking(){
-  const el = document.getElementById('aiThinking');
-  if(el) el.remove();
-}
-
-async function aiSend(){
-  const input = document.getElementById('aiInput');
-  const prompt = input.value.trim();
-  if(!prompt) return;
-
-  const btn = document.getElementById('aiSendBtn');
-  btn.disabled = true;
-  input.value = '';
-
-  aiAddMessage('user', prompt.replace(/\n/g,'<br>'));
-  aiShowThinking();
-
-  // 現在のデータをAIに渡す
-  const dataSnapshot = {
-    tasks: tasks.map(t=>({
-      id: t.id, cat: t.cat, name: t.name, person: t.person||'',
-      date: t.date||'', done: t.done, memo: t.memo||'',
-      comments: t.comments.length
-    })),
-    cats: cats.map(c=>({id:c.id, label:c.label})),
-    fleaEntries: fleaEntries.map(e=>({id:e.id, name:e.name, item:e.item, contact:e.contact})),
-    today: new Date().toISOString().slice(0,10),
-    nextId: nid
+function claudeCopyData(){
+  const data = {
+    instruction: "以下のSOUNDHOPE FEST. 2026タスク管理データを編集してください。変更後は同じJSON形式で返してください。",
+    tasks, cats, fleaEntries, nid,
+    today: new Date().toISOString().slice(0,10)
   };
-
-  const systemPrompt = `あなたはSOUNDHOPE FEST. 2026（2026年6月27日、岩手県水沢Zアリーナ野外ステージ、無料入場）のタスク管理AIアシスタントです。
-
-現在のタスクデータ：
-${JSON.stringify(dataSnapshot, null, 2)}
-
-カテゴリID一覧：
-- prep: 事前準備・備品
-- promo: 告知・宣伝  
-- venue: 会場・ステージ設営
-- staff: スタッフ・担当割り
-- flea: フリマ・出店
-- kitchen: キッチンカー
-- trouble: トラブル想定・回避策
-- after: 当日・撤収・アフター
-
-ユーザーの指示に応じて以下のことができます：
-1. タスクの追加・編集・削除の提案
-2. 現在のデータの分析・報告
-3. 進捗確認
-
-タスクを追加・変更する場合は、必ずレスポンスの末尾にJSON形式で変更内容を含めてください。形式は以下：
-
-追加の場合：
-\`\`\`json
-{"action":"add","tasks":[{"cat":"prep","name":"タスク名","person":"担当者名","date":"2026-06-15","memo":"メモ"}]}
-\`\`\`
-
-編集の場合：
-\`\`\`json
-{"action":"edit","tasks":[{"id":1,"name":"新しいタスク名","person":"担当者","date":"2026-06-15","memo":"メモ"}]}
-\`\`\`
-
-削除の場合：
-\`\`\`json
-{"action":"delete","ids":[1,2,3]}
-\`\`\`
-
-変更なしで情報提供だけの場合はJSONブロックは不要です。
-日本語で回答してください。`;
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    const data = await res.json();
-    aiHideThinking();
-
-    if(data.error){
-      aiAddMessage('error', `エラー: ${data.error.message}`);
-      btn.disabled = false;
-      return;
-    }
-
-    const text = data.content.map(b=>b.text||'').join('');
-
-    // JSONブロックを抽出して実行
-    const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
-    const displayText = text.replace(/```json[\s\S]*?```/g, '').trim();
-
-    const msgDiv = aiAddMessage('assistant', displayText.replace(/\n/g,'<br>'));
-
-    if(jsonMatch){
-      try {
-        const op = JSON.parse(jsonMatch[1]);
-        let applied = '';
-
-        if(op.action === 'add' && op.tasks){
-          op.tasks.forEach(t=>{
-            tasks.push({id:nid++, cat:t.cat||'prep', name:t.name, person:t.person||'', date:t.date||'', memo:t.memo||'', done:false, comments:[]});
-          });
-          addLog(`AIが${op.tasks.length}件のタスクを追加`);
-          applied = `✅ ${op.tasks.length}件のタスクを追加しました`;
-        } else if(op.action === 'edit' && op.tasks){
-          op.tasks.forEach(upd=>{
-            const t = tasks.find(x=>x.id===upd.id);
-            if(t) Object.assign(t, {name:upd.name||t.name, person:upd.person||t.person, date:upd.date||t.date, memo:upd.memo||t.memo});
-          });
-          addLog(`AIが${op.tasks.length}件のタスクを編集`);
-          applied = `✅ ${op.tasks.length}件のタスクを編集しました`;
-        } else if(op.action === 'delete' && op.ids){
-          tasks = tasks.filter(t=>!op.ids.includes(t.id));
-          addLog(`AIが${op.ids.length}件のタスクを削除`);
-          applied = `✅ ${op.ids.length}件のタスクを削除しました`;
-        }
-
-        if(applied){
-          const badge = document.createElement('div');
-          badge.className = 'ai-applied';
-          badge.textContent = applied;
-          msgDiv.appendChild(badge);
-          pushAfterChange();
-          render();
-        }
-      } catch(e){
-        console.error('JSON parse error', e);
-      }
-    }
-  } catch(e){
-    aiHideThinking();
-    aiAddMessage('error', `通信エラー: ${e.message}`);
-  }
-
-  btn.disabled = false;
+  const json = JSON.stringify(data, null, 2);
+  navigator.clipboard.writeText(json).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = json; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  }).finally ? navigator.clipboard.writeText(json).then(()=>{}).catch(()=>{}) : null;
+  navigator.clipboard.writeText(json).then(()=>{
+    showClaudeMsg('コピーしました！claude.ai に貼り付けて指示してください', 'ok');
+  }).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = json; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showClaudeMsg('コピーしました！claude.ai に貼り付けて指示してください', 'ok');
+  });
+}
+function claudeImport(e){
+  const file = e.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if(!d.tasks) throw new Error('tasksが見つかりません');
+      if(!confirm(`Claudeから受け取ったデータを反映しますか？\n（現在${tasks.length}件 → ${d.tasks.length}件）`)) return;
+      tasks = d.tasks;
+      if(d.nid) nid = d.nid;
+      if(d.fleaEntries) fleaEntries = d.fleaEntries;
+      addLog('Claudeによるデータ更新を反映');
+      saveLocal(); saveFleaLocal(); pushAfterChange(); render(); renderChangelog();
+      showClaudeMsg(`反映しました！タスク${tasks.length}件`, 'ok');
+    } catch(err){ showClaudeMsg('読み込みエラー: ' + err.message, 'err'); }
+  };
+  r.readAsText(file); e.target.value='';
+}
+function showClaudeMsg(text, type){
+  const el = document.getElementById('claudePanelMsg');
+  el.textContent = text; el.style.display = 'block';
+  el.style.background = type==='ok' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)';
+  el.style.border = type==='ok' ? '1px solid #166534' : '1px solid #7f1d1d';
+  el.style.color = type==='ok' ? '#86efac' : '#fca5a5';
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>{ el.style.display='none'; }, 5000);
 }
 
-// Enterで送信（Shift+Enterで改行）
-document.addEventListener('keydown', e=>{
-  if(e.key === 'Enter' && !e.shiftKey && document.activeElement.id === 'aiInput'){
-    e.preventDefault();
-    aiSend();
-  }
-});
 document.addEventListener('click', e=>{
   // フリマモーダル：背景クリックで閉じる
   if(e.target.id === 'fleaOverlay'){ closeFlea(); return; }
