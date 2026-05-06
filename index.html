@@ -487,7 +487,75 @@ body {
 .name-bar input:focus { outline: none; border-color: var(--accent); }
 .name-bar-hint { font-size: 10px; color: var(--text3); }
 
-@media (max-width: 480px) {
+/* DIFF HIGHLIGHT */
+.task-row.diff-new {
+  background: rgba(34,197,94,0.10);
+  border-left: 3px solid var(--green);
+}
+.task-row.diff-new .t-name { color: var(--green); }
+.task-row.diff-edited {
+  background: rgba(234,179,8,0.10);
+  border-left: 3px solid var(--yellow);
+}
+.task-row.diff-edited .t-name { color: var(--yellow); }
+.task-row.diff-done {
+  background: rgba(99,179,237,0.10);
+  border-left: 3px solid #63b3ed;
+}
+.task-row.diff-done .t-name { color: #63b3ed; }
+.task-row.diff-comment {
+  background: rgba(249,115,22,0.10);
+  border-left: 3px solid var(--accent);
+}
+.diff-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 20px;
+  margin-left: 6px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.diff-badge.new    { background: rgba(34,197,94,0.2);   color: var(--green);  border: 1px solid var(--green); }
+.diff-badge.edited { background: rgba(234,179,8,0.2);   color: var(--yellow); border: 1px solid var(--yellow); }
+.diff-badge.done   { background: rgba(99,179,237,0.2);  color: #63b3ed;       border: 1px solid #63b3ed; }
+.diff-badge.comment{ background: rgba(249,115,22,0.2);  color: var(--accent); border: 1px solid var(--accent); }
+/* 削除済みタスク */
+.task-row.diff-deleted {
+  background: rgba(239,68,68,0.07);
+  border-left: 3px solid var(--red);
+  opacity: 0.75;
+}
+.task-row.diff-deleted .t-name {
+  color: var(--red);
+  text-decoration: line-through;
+}
+/* 既読バー */
+.diff-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: #1a1a2e;
+  border-bottom: 1px solid #2e2e5a;
+  font-size: 12px;
+  color: #a5b4fc;
+}
+.diff-bar.has-diff { display: flex; }
+.diff-bar-count { flex: 1; }
+.btn-markread {
+  font-size: 11px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  border: 1px solid #6366f1;
+  background: rgba(99,102,241,0.15);
+  color: #a5b4fc;
+  cursor: pointer;
+  font-family: 'Noto Sans JP', sans-serif;
+  transition: background 0.15s;
+}
+.btn-markread:hover { background: rgba(99,102,241,0.3); }
   .stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .toolbar { gap: 5px; }
   .btn, .toolbar select { font-size: 11px; height: 30px; }
@@ -511,7 +579,7 @@ body {
 </header>
 
 <!-- 同期通知バナー -->
-<div id="syncBanner" style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:300;background:#1a2e1a;border:1px solid #166534;color:#86efac;padding:10px 20px;border-radius:8px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,0.5);display:flex;align-items:center;gap:10px;white-space:nowrap;animation:slideIn 0.3s ease">
+<div id="syncBanner" style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:300;background:#1a2e1a;border:1px solid #166534;color:#86efac;padding:10px 20px;border-radius:8px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,0.5);align-items:center;gap:10px;white-space:nowrap;animation:slideIn 0.3s ease">
   <span id="syncBannerText"></span>
   <button onclick="document.getElementById('syncBanner').style.display='none'" style="background:transparent;border:none;color:#86efac;cursor:pointer;font-size:16px;line-height:1;padding:0 0 0 4px">×</button>
 </div>
@@ -521,6 +589,12 @@ body {
   <label>あなたの名前：</label>
   <input type="text" id="myName" placeholder="例：〆、ひかり" maxlength="20">
   <span class="name-bar-hint">コメント・変更時に使用</span>
+</div>
+
+<div class="diff-bar" id="diffBar">
+  <span>👁</span>
+  <span class="diff-bar-count" id="diffBarCount"></span>
+  <button class="btn-markread" onclick="markAllRead()">✓ 既読にする</button>
 </div>
 
 <div class="main">
@@ -593,9 +667,101 @@ body {
 
 <script>
 // ---- STORAGE KEY ----
-const LS_KEY = 'soundhope2026_tasks';
-const LS_LOG  = 'soundhope2026_log';
-const LS_NAME = 'soundhope2026_name';
+const LS_KEY      = 'soundhope2026_tasks';
+const LS_LOG      = 'soundhope2026_log';
+const LS_NAME     = 'soundhope2026_name';
+const LS_SNAPSHOT = 'soundhope2026_snapshot'; // 前回既読時のスナップショット
+
+// ---- DIFF SYSTEM ----
+// diffMap: taskId → 'new'|'edited'|'done'|'comment'  / 'deleted'タスクはdeletedTasksに
+let diffMap      = {};   // { id: 'new'|'edited'|'done'|'comment' }
+let deletedTasks = [];   // [{...task, _diff:'deleted'}]
+
+function takeSnapshot(){
+  // 現在のtasksをスナップショットとして保存（既読時点）
+  try {
+    localStorage.setItem(LS_SNAPSHOT, JSON.stringify(tasks));
+  } catch(e){}
+}
+
+function loadSnapshot(){
+  try {
+    const s = localStorage.getItem(LS_SNAPSHOT);
+    return s ? JSON.parse(s) : null;
+  } catch(e){ return null; }
+}
+
+function computeDiff(prevTasks, nextTasks){
+  diffMap = {};
+  deletedTasks = [];
+  if(!prevTasks) return; // 初回は差分なし
+
+  const prevMap = {};
+  prevTasks.forEach(t => prevMap[t.id] = t);
+  const nextMap = {};
+  nextTasks.forEach(t => nextMap[t.id] = t);
+
+  // 追加・編集・完了・コメント
+  nextTasks.forEach(t => {
+    const prev = prevMap[t.id];
+    if(!prev){
+      diffMap[t.id] = 'new';
+      return;
+    }
+    // 完了状態の変化（未→完了）
+    if(!prev.done && t.done){
+      diffMap[t.id] = 'done';
+      return;
+    }
+    // コメント増加
+    if(t.comments.length > prev.comments.length){
+      diffMap[t.id] = 'comment';
+      return;
+    }
+    // 名前・担当・期日・メモの変更
+    if(t.name !== prev.name || t.person !== prev.person || t.date !== prev.date || t.memo !== prev.memo){
+      diffMap[t.id] = 'edited';
+      return;
+    }
+  });
+
+  // 削除されたタスク
+  prevTasks.forEach(prev => {
+    if(!nextMap[prev.id]){
+      deletedTasks.push({...prev, _diff:'deleted'});
+    }
+  });
+}
+
+function markAllRead(){
+  takeSnapshot();
+  diffMap = {};
+  deletedTasks = [];
+  render();
+}
+
+function updateDiffBar(){
+  const bar   = document.getElementById('diffBar');
+  const count = document.getElementById('diffBarCount');
+  const total = Object.keys(diffMap).length + deletedTasks.length;
+  if(total === 0){
+    bar.classList.remove('has-diff');
+    return;
+  }
+  bar.classList.add('has-diff');
+  const parts = [];
+  const nNew  = Object.values(diffMap).filter(v=>v==='new').length;
+  const nEdit = Object.values(diffMap).filter(v=>v==='edited').length;
+  const nDone = Object.values(diffMap).filter(v=>v==='done').length;
+  const nComm = Object.values(diffMap).filter(v=>v==='comment').length;
+  const nDel  = deletedTasks.length;
+  if(nNew)  parts.push(`🟢 新規${nNew}件`);
+  if(nEdit) parts.push(`🟡 編集${nEdit}件`);
+  if(nDone) parts.push(`🔵 完了${nDone}件`);
+  if(nComm) parts.push(`🟠 コメント${nComm}件`);
+  if(nDel)  parts.push(`🔴 削除${nDel}件`);
+  count.textContent = '前回から変更あり：' + parts.join('　');
+}
 
 function saveLocal(){
   try {
@@ -663,7 +829,9 @@ async function pollCloud(){
 
     // 新しいデータを自動適用
     lastSeenAt = d.savedAt;
+    const prevSnapshot = loadSnapshot();
     tasks = d.tasks; changelog = d.changelog||[]; nid = d.nid||400;
+    computeDiff(prevSnapshot, tasks);
     saveLocal(); render(); renderChangelog();
 
     const who = d.savedBy || '誰か';
@@ -815,7 +983,7 @@ let tasks = [
 
 let changelog = [];
 let hideDone = false;
-let openCats = new Set(cats.map(c=>c.id));
+let openCats = new Set(); // デフォルト全閉じ
 let openComments = new Set();
 let changelogOpen = false;
 let urgentOpen = true;
@@ -925,6 +1093,22 @@ function render(){
     if(isOpen){
       const td=document.createElement('div');
       td.className='tasks';
+
+      // 削除済みタスクをこのカテゴリ内に幽霊表示
+      const delInCat = deletedTasks.filter(t=>t.cat===cat.id);
+      delInCat.forEach(t=>{
+        const row=document.createElement('div');
+        row.className='task-row diff-deleted';
+        row.innerHTML=`
+          <div class="chk" style="opacity:0.4"></div>
+          <div class="t-body">
+            <div class="t-name">${t.name} <span class="diff-badge" style="background:rgba(239,68,68,0.2);color:var(--red);border:1px solid var(--red)">削除済み</span></div>
+            ${t.person?`<div class="t-person">担当：${t.person}</div>`:''}
+          </div>
+        `;
+        td.appendChild(row);
+      });
+
       ct.forEach(t=>{
         const d=t.date?du(t.date):null;
         const showAlert=!t.done&&d!==null&&d<=7;
@@ -941,13 +1125,23 @@ function render(){
             </div>
           </div>`:'';
 
+        const diffType = diffMap[t.id];
+        const diffLabels = {
+          new:     ['diff-new',     'new',     '🟢 NEW'],
+          edited:  ['diff-edited',  'edited',  '🟡 編集'],
+          done:    ['diff-done',    'done',    '🔵 完了'],
+          comment: ['diff-comment', 'comment', '🟠 コメント'],
+        };
+        const [diffClass, badgeClass, badgeText] = diffType ? diffLabels[diffType] : ['','',''];
+        const diffBadge = diffType ? `<span class="diff-badge ${badgeClass}">${badgeText}</span>` : '';
+
         const row=document.createElement('div');
-        row.className='task-row'+(t.done?' done':'');
+        row.className='task-row'+(t.done?' done':'')+(diffClass?' '+diffClass:'');
         row.dataset.taskId=t.id;
         row.innerHTML=`
           <div class="chk${t.done?' done':''}" data-id="${t.id}">${t.done?'✓':''}</div>
           <div class="t-body" data-edit="${t.id}">
-            <div class="t-name">${t.name}</div>
+            <div class="t-name">${t.name}${diffBadge}</div>
             ${t.person?`<div class="t-person">担当：${t.person}</div>`:''}
             ${t.memo?`<div class="t-memo">${t.memo}</div>`:''}
             ${alertHtml}
@@ -997,6 +1191,7 @@ function render(){
     <div class="stat"><div class="stat-n" style="color:var(--yellow)">${near}</div><div class="stat-l">7日以内</div></div>
     <div class="stat"><div class="stat-n" style="color:var(--red)">${over}</div><div class="stat-l">期日超過</div></div>
   `;
+  updateDiffBar();
 }
 
 // ---- CONTEXT MENU ----
@@ -1194,8 +1389,15 @@ document.getElementById('myName').addEventListener('input', ()=>{
   try { localStorage.setItem(LS_NAME, document.getElementById('myName').value); } catch(e){}
 });
 loadLocal();
+// 初回起動: スナップショットとクラウドデータを比較して差分を出す
+// （クラウド同期のpollCloud内で差分計算されるので、ここでは前回スナップショットとlocalStorageを比較）
+{
+  const snap = loadSnapshot();
+  if(snap && tasks.length){
+    computeDiff(snap, tasks);
+  }
+}
 render();
-// 開いたら即同期開始
 startSync();
 </script>
 </body>
