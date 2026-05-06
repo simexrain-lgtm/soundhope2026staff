@@ -455,6 +455,47 @@ body {
 .flea-btn-open { font-size:11px; padding:3px 10px; height:26px; border-radius:var(--radius-sm); border:1px solid #854d0e; background:rgba(249,115,22,0.1); color:var(--accent2); cursor:pointer; font-family:'Noto Sans JP',sans-serif; white-space:nowrap; transition:background 0.15s; }
 .flea-btn-open:hover { background:rgba(249,115,22,0.2); }
 
+/* MAP SECTION */
+.map-tab {
+  flex:1; font-size:11px; padding:9px 6px; border:none; border-bottom:2px solid transparent;
+  background:transparent; color:var(--text3); cursor:pointer; font-family:'Noto Sans JP',sans-serif;
+  transition:color 0.15s,border-color 0.15s;
+}
+.map-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.map-palette-btn {
+  font-size:11px; padding:4px 10px; border-radius:20px;
+  border:1px solid var(--border2); background:var(--bg3); color:var(--text2);
+  cursor:pointer; font-family:'Noto Sans JP',sans-serif; transition:all 0.15s;
+}
+.map-palette-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(249,115,22,0.1); }
+.map-item {
+  position:absolute; cursor:pointer; user-select:none;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  transform:translate(-50%,-50%);
+}
+.map-item-icon { font-size:22px; line-height:1; filter:drop-shadow(0 1px 3px rgba(0,0,0,0.5)); }
+.map-item-label {
+  font-size:9px; color:#fff; background:rgba(0,0,0,0.6);
+  padding:1px 5px; border-radius:10px; white-space:nowrap; max-width:70px;
+  overflow:hidden; text-overflow:ellipsis;
+}
+.map-item-del {
+  display:none; position:absolute; top:-8px; right:-8px;
+  width:16px; height:16px; border-radius:50%; background:var(--red);
+  color:#fff; font-size:10px; line-height:16px; text-align:center;
+  cursor:pointer; border:none;
+}
+.map-item:hover .map-item-del { display:block; }
+.map-link-card {
+  display:flex; align-items:center; gap:10px; padding:8px 12px;
+  background:var(--bg3); border:1px solid var(--border); border-radius:6px;
+}
+.map-img-card {
+  background:var(--bg3); border:1px solid var(--border); border-radius:8px; overflow:hidden;
+}
+.map-img-card img { width:100%; max-height:300px; object-fit:contain; display:block; }
+.map-img-card-hdr { display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid var(--border); }
+
 /* LINE OUT */
 .line-out {
   display: none;
@@ -660,6 +701,73 @@ body {
     <label class="btn" style="cursor:pointer" title="JSONから復元">📥 復元<input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)"></label>
   </div>
   <div id="cloudMsg" style="display:none;margin-bottom:10px;padding:8px 14px;border-radius:6px;font-size:12px;"></div>
+
+  <!-- 会場マップセクション -->
+  <div style="margin-bottom:16px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;">
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);" onclick="toggleMapSection()">
+      <span>🗺</span>
+      <span style="font-size:13px;font-weight:700;color:var(--text);flex:1;">会場マップ・搬入ルート</span>
+      <span id="mapSectionArrow" style="font-size:10px;color:var(--text3);transition:transform 0.2s;">▶</span>
+    </div>
+    <div id="mapSectionBody" style="display:none;">
+      <!-- タブ -->
+      <div style="display:flex;border-bottom:1px solid var(--border);">
+        <button class="map-tab active" id="mapTab0" onclick="switchMapTab(0)">🖼 画像・写真</button>
+        <button class="map-tab" id="mapTab1" onclick="switchMapTab(1)">📐 レイアウト</button>
+        <button class="map-tab" id="mapTab2" onclick="switchMapTab(2)">📍 Googleマップ</button>
+      </div>
+
+      <!-- タブ0: 画像 -->
+      <div id="mapPane0" style="padding:14px 16px;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">画像URLを入力するか、ファイルをアップロードしてください</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+          <input id="mapImgUrl" type="text" placeholder="画像URL（Googleドライブ等）" style="flex:1;min-width:180px;font-size:12px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:'Noto Sans JP',sans-serif;">
+          <button onclick="mapAddImageUrl()" style="font-size:12px;padding:7px 14px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;">追加</button>
+          <label style="font-size:12px;padding:7px 14px;border-radius:6px;border:1px solid var(--accent);background:rgba(249,115,22,0.1);color:var(--accent);cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;">
+            📁 ファイル選択<input type="file" accept="image/*" style="display:none" onchange="mapUploadImage(event)">
+          </label>
+        </div>
+        <div id="mapImageList" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+
+      <!-- タブ1: レイアウトマップ -->
+      <div id="mapPane1" style="display:none;padding:14px 16px;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">アイテムを選んでマップ上をタップ/クリックして配置。長押しでドラッグ移動。</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="mapItemPalette">
+          <button class="map-palette-btn active" data-type="stage" onclick="selectMapItem(this)">🎸 ステージ</button>
+          <button class="map-palette-btn" data-type="tent" onclick="selectMapItem(this)">⛺ テント</button>
+          <button class="map-palette-btn" data-type="kitchen" onclick="selectMapItem(this)">🍱 キッチンカー</button>
+          <button class="map-palette-btn" data-type="flea" onclick="selectMapItem(this)">🛒 フリマ</button>
+          <button class="map-palette-btn" data-type="parking" onclick="selectMapItem(this)">🅿 駐車場</button>
+          <button class="map-palette-btn" data-type="toilet" onclick="selectMapItem(this)">🚻 トイレ</button>
+          <button class="map-palette-btn" data-type="entry" onclick="selectMapItem(this)">🚪 入口</button>
+          <button class="map-palette-btn" data-type="route" onclick="selectMapItem(this,'route')">➡ 搬入ルート</button>
+          <button onclick="clearMapItems()" style="font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--red);background:transparent;color:var(--red);cursor:pointer;margin-left:auto;font-family:'Noto Sans JP',sans-serif;">🗑 全消去</button>
+        </div>
+        <div id="mapCanvas" style="position:relative;width:100%;height:340px;background:#1a2a1a;border-radius:8px;border:1px solid var(--border2);overflow:hidden;touch-action:none;">
+          <!-- グリッド背景 -->
+          <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;" xmlns="http://www.w3.org/2000/svg">
+            <defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/></pattern></defs>
+            <rect width="100%" height="100%" fill="url(#grid)"/>
+          </svg>
+          <div style="position:absolute;bottom:8px;right:10px;font-size:10px;color:rgba(255,255,255,0.2);pointer-events:none;">MIZUSAWA Z ARENA</div>
+          <div id="mapItems"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center;">変更は自動で保存・同期されます</div>
+      </div>
+
+      <!-- タブ2: Googleマップ -->
+      <div id="mapPane2" style="display:none;padding:14px 16px;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">GoogleマップのURLを貼り付けてください（マイマップ・ストリートビュー等）</div>
+        <div id="mapLinkList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input id="mapLinkUrl" type="text" placeholder="https://maps.google.com/..." style="flex:1;min-width:180px;font-size:12px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:'Noto Sans JP',sans-serif;">
+          <input id="mapLinkLabel" type="text" placeholder="ラベル（例：搬入ルート）" style="width:140px;font-size:12px;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:'Noto Sans JP',sans-serif;">
+          <button onclick="mapAddLink()" style="font-size:12px;padding:7px 14px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;">追加</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="tree" id="tree"></div>
 
@@ -1590,6 +1698,160 @@ document.getElementById('myName').addEventListener('input', ()=>{
   try { localStorage.setItem(LS_NAME, document.getElementById('myName').value); } catch(e){}
 });
 
+// ---- MAP SECTION ----
+const LS_MAP = 'soundhope2026_map';
+const CLOUD_MAP = 'soundhope2026_map_shared';
+let mapOpen = false;
+let mapTab = 0;
+let mapSelectedType = 'stage';
+let mapData = { items:[], images:[], links:[] };
+
+const MAP_ICONS = { stage:'🎸', tent:'⛺', kitchen:'🍱', flea:'🛒', parking:'🅿', toilet:'🚻', entry:'🚪', route:'➡' };
+const MAP_LABELS = { stage:'ステージ', tent:'テント', kitchen:'キッチンカー', flea:'フリマ', parking:'駐車場', toilet:'トイレ', entry:'入口', route:'搬入ルート' };
+
+function saveMapLocal(){ try{ localStorage.setItem(LS_MAP, JSON.stringify(mapData)); }catch(e){} }
+function loadMapLocal(){ try{ const d=localStorage.getItem(LS_MAP); if(d) mapData=JSON.parse(d); }catch(e){} }
+async function pushMapCloud(){ try{ await window.storage.set(CLOUD_MAP, JSON.stringify({...mapData, updatedAt:Date.now()}), true); }catch(e){} }
+async function pollMapCloud(){
+  try{
+    const r = await window.storage.get(CLOUD_MAP, true);
+    if(!r) return;
+    const d = JSON.parse(r.value);
+    if(!d || !d.updatedAt) return;
+    if(d.updatedAt <= (mapData._ts||0)) return;
+    mapData = d; mapData._ts = d.updatedAt;
+    saveMapLocal(); renderMapItems(); renderMapImages(); renderMapLinks();
+  }catch(e){}
+}
+
+function toggleMapSection(){
+  mapOpen = !mapOpen;
+  document.getElementById('mapSectionBody').style.display = mapOpen ? 'block' : 'none';
+  document.getElementById('mapSectionArrow').style.transform = mapOpen ? 'rotate(90deg)' : '';
+  if(mapOpen){ pollMapCloud(); renderMapItems(); renderMapImages(); renderMapLinks(); }
+}
+
+function switchMapTab(n){
+  mapTab = n;
+  [0,1,2].forEach(i=>{
+    document.getElementById('mapTab'+i).className = 'map-tab'+(i===n?' active':'');
+    document.getElementById('mapPane'+i).style.display = i===n?'block':'none';
+  });
+  if(n===1) renderMapItems();
+}
+
+function selectMapItem(btn){ mapSelectedType = btn.dataset.type; document.querySelectorAll('.map-palette-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+
+// マップクリックで配置
+document.addEventListener('click', e=>{
+  const canvas = document.getElementById('mapCanvas');
+  if(!canvas || e.target.closest('.map-item') || e.target.closest('.map-palette-btn')) return;
+  if(!e.target.closest('#mapCanvas')) return;
+  const rect = canvas.getBoundingClientRect();
+  const xPct = ((e.clientX - rect.left) / rect.width * 100).toFixed(1);
+  const yPct = ((e.clientY - rect.top) / rect.height * 100).toFixed(1);
+  const label = prompt(`ラベルを入力（空白でOK）`, MAP_LABELS[mapSelectedType]||'');
+  if(label === null) return;
+  mapData.items.push({ id: Date.now(), type: mapSelectedType, x: xPct, y: yPct, label: label||MAP_LABELS[mapSelectedType]||'' });
+  saveMapLocal(); pushMapCloud(); renderMapItems();
+});
+
+function renderMapItems(){
+  const el = document.getElementById('mapItems'); if(!el) return;
+  el.innerHTML = '';
+  (mapData.items||[]).forEach(item=>{
+    const div = document.createElement('div');
+    div.className = 'map-item';
+    div.style.left = item.x+'%'; div.style.top = item.y+'%';
+    div.innerHTML = `<div class="map-item-icon">${MAP_ICONS[item.type]||'📍'}</div><div class="map-item-label">${item.label}</div><button class="map-item-del" data-mapid="${item.id}">×</button>`;
+    // ドラッグ（PC・スマホ）
+    let dragging = false, ox=0, oy=0;
+    const onMove = ev=>{
+      if(!dragging) return;
+      const canvas = document.getElementById('mapCanvas');
+      const rect = canvas.getBoundingClientRect();
+      const cx = (ev.touches?ev.touches[0].clientX:ev.clientX)-rect.left;
+      const cy = (ev.touches?ev.touches[0].clientY:ev.clientY)-rect.top;
+      item.x = Math.max(0,Math.min(100, cx/rect.width*100)).toFixed(1);
+      item.y = Math.max(0,Math.min(100, cy/rect.height*100)).toFixed(1);
+      div.style.left=item.x+'%'; div.style.top=item.y+'%';
+    };
+    const onUp = ()=>{ if(dragging){ dragging=false; saveMapLocal(); pushMapCloud(); } };
+    div.addEventListener('mousedown', ev=>{ if(ev.target.classList.contains('map-item-del')) return; dragging=true; ev.preventDefault(); });
+    div.addEventListener('touchstart', ev=>{ if(ev.target.classList.contains('map-item-del')) return; dragging=true; ev.preventDefault(); }, {passive:false});
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', ev=>onMove(ev), {passive:false});
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
+    el.appendChild(div);
+  });
+}
+
+function deleteMapItem(id){
+  mapData.items = (mapData.items||[]).filter(x=>x.id!==+id);
+  saveMapLocal(); pushMapCloud(); renderMapItems();
+}
+
+// 画像
+function mapAddImageUrl(){
+  const url = document.getElementById('mapImgUrl').value.trim();
+  if(!url) return;
+  const label = prompt('ラベルを入力', '会場図');
+  if(label===null) return;
+  mapData.images = mapData.images||[];
+  mapData.images.push({id:Date.now(), url, label:label||'画像'});
+  document.getElementById('mapImgUrl').value='';
+  saveMapLocal(); pushMapCloud(); renderMapImages();
+}
+
+function mapUploadImage(e){
+  const file = e.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = ev=>{
+    const label = prompt('ラベルを入力', file.name.replace(/\.[^.]+$/,''))||file.name;
+    mapData.images = mapData.images||[];
+    mapData.images.push({id:Date.now(), url:ev.target.result, label});
+    saveMapLocal(); pushMapCloud(); renderMapImages();
+  };
+  r.readAsDataURL(file); e.target.value='';
+}
+
+function renderMapImages(){
+  const el = document.getElementById('mapImageList'); if(!el) return;
+  const imgs = mapData.images||[];
+  el.innerHTML = imgs.length ? '' : '<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px;">まだ画像がありません</div>';
+  imgs.forEach(img=>{
+    el.innerHTML += `<div class="map-img-card"><div class="map-img-card-hdr"><span style="font-size:12px;font-weight:700;color:var(--text);flex:1;">${img.label}</span><button onclick="deleteMapImage(${img.id})" style="font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;">削除</button></div><img src="${img.url}" onerror="this.style.display='none'" loading="lazy"></div>`;
+  });
+}
+
+function deleteMapImage(id){ mapData.images=(mapData.images||[]).filter(x=>x.id!==id); saveMapLocal(); pushMapCloud(); renderMapImages(); }
+
+// Googleマップリンク
+function mapAddLink(){
+  const url = document.getElementById('mapLinkUrl').value.trim();
+  const label = document.getElementById('mapLinkLabel').value.trim()||'マップリンク';
+  if(!url) return;
+  mapData.links = mapData.links||[];
+  mapData.links.push({id:Date.now(), url, label});
+  document.getElementById('mapLinkUrl').value='';
+  document.getElementById('mapLinkLabel').value='';
+  saveMapLocal(); pushMapCloud(); renderMapLinks();
+}
+
+function renderMapLinks(){
+  const el = document.getElementById('mapLinkList'); if(!el) return;
+  const links = mapData.links||[];
+  el.innerHTML = links.length ? '' : '<div style="font-size:12px;color:var(--text3);">まだリンクがありません</div>';
+  links.forEach(lnk=>{
+    el.innerHTML += `<div class="map-link-card"><span style="font-size:16px;">📍</span><a href="${lnk.url}" target="_blank" rel="noopener" style="flex:1;font-size:13px;color:var(--accent);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${lnk.label}</a><button onclick="deleteMapLink(${lnk.id})" style="font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;">削除</button></div>`;
+  });
+}
+
+function deleteMapLink(id){ mapData.links=(mapData.links||[]).filter(x=>x.id!==id); saveMapLocal(); pushMapCloud(); renderMapLinks(); }
+
+// マップアイテム削除ボタン（グローバル委任で処理）
+
 // ---- CLAUDE連携パネル ----
 let claudePanelOpen = false;
 function toggleClaudePanel(){
@@ -1681,6 +1943,9 @@ document.addEventListener('click', e=>{
   // フリマ出品者削除
   const fleaDel = e.target.closest('[data-fleaid]');
   if(fleaDel){ deleteFlea(+fleaDel.dataset.fleaid); return; }
+  // マップアイテム削除
+  const mapDel = e.target.closest('[data-mapid]');
+  if(mapDel){ deleteMapItem(mapDel.dataset.mapid); return; }
   // コメントボタン
   const comm = e.target.closest('[data-comm]');
   if(comm && comm.closest('#tree')){
@@ -1693,6 +1958,7 @@ document.addEventListener('click', e=>{
 
 loadLocal();
 loadFleaLocal();
+loadMapLocal();
 // 初回起動: スナップショットとクラウドデータを比較して差分を出す
 {
   const snap = loadSnapshot();
