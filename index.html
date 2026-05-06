@@ -693,13 +693,13 @@ body {
 </div>
 
 <!-- FLEA MODAL -->
-<div class="flea-overlay" id="fleaOverlay" onclick="if(event.target===this)closeFlea()">
+<div class="flea-overlay" id="fleaOverlay">
   <div class="flea-modal">
     <div class="flea-modal-header">
       <span style="font-size:18px">🛒</span>
       <span class="flea-modal-title">フリマ出品者リスト</span>
       <span class="flea-count-badge" id="fleaCountBadge">0 / 20組</span>
-      <button class="flea-del" onclick="closeFlea()" style="font-size:14px;padding:4px 10px">✕</button>
+      <button class="btn" id="fleaCloseBtn" style="font-size:14px;padding:4px 10px;border-color:var(--border2)">✕</button>
     </div>
     <div class="flea-body">
       <div class="flea-list" id="fleaList"></div>
@@ -709,8 +709,8 @@ body {
         <div><label>出品情報（出品物・ジャンルなど）</label><textarea id="fItem" placeholder="例：ハンドメイドアクセサリー、古着など"></textarea></div>
         <div><label>連絡先（電話 / LINE / Instagram など）</label><input id="fContact" type="text" placeholder="例：090-XXXX-XXXX"></div>
         <div class="flea-form-btns">
-          <button class="btn-cancel" onclick="closeFlea()">閉じる</button>
-          <button class="btn-save" onclick="saveFlea()">登録する</button>
+          <button class="btn-cancel" id="fleaCancelBtn">閉じる</button>
+          <button class="btn-save" id="fleaSaveBtn">登録する</button>
         </div>
       </div>
     </div>
@@ -805,7 +805,7 @@ function renderFleaList(){
         ${e.contact ? `<div class="flea-contact">📞 ${e.contact}</div>` : ''}
         <div class="flea-contact" style="margin-top:4px;color:var(--text3)">${e.registeredAt}</div>
       </div>
-      <button class="flea-del" onclick="deleteFlea(${e.id})">削除</button>
+      <button class="flea-del" data-fleaid="${e.id}">削除</button>
     </div>
   `).join('');
 }
@@ -824,13 +824,13 @@ function saveFlea(){
   document.getElementById('fName').value='';
   document.getElementById('fItem').value='';
   document.getElementById('fContact').value='';
-  saveFleaLocal(); pushFleaToCloud(); renderFleaList();
+  saveFleaLocal(); pushFleaToCloud(); renderFleaList(); render();
 }
 function deleteFlea(id){
   const e = fleaEntries.find(x=>x.id===id);
   if(!e || !confirm(`「${e.name}」を削除しますか？`)) return;
   fleaEntries = fleaEntries.filter(x=>x.id!==id);
-  saveFleaLocal(); pushFleaToCloud(); renderFleaList();
+  saveFleaLocal(); pushFleaToCloud(); renderFleaList(); render();
 }
 const LS_LOG      = 'soundhope2026_log';
 const LS_NAME     = 'soundhope2026_name';
@@ -1334,24 +1334,6 @@ function render(){
     tree.appendChild(block);
   });
 
-  // イベント委任（チェックとコメントのみ）
-  tree.addEventListener('click',e=>{
-    const chk=e.target.closest('.chk');
-    const comm=e.target.closest('[data-comm]');
-    if(chk){
-      const id=+chk.dataset.id;
-      const t=tasks.find(x=>x.id===id);
-      if(t){
-        if(!t.done && !confirm(`「${t.name}」を完了にしますか？`)) return;
-        t.done=!t.done; addLog(`「${t.name}」を${t.done?'完了':'未完了'}に変更`); pushAfterChange(); render();
-      }
-    } else if(comm){
-      const id=+comm.dataset.comm;
-      if(openComments.has(id)) openComments.delete(id); else openComments.add(id);
-      render();
-    }
-  },{once:true});
-
   const total=tasks.length;
   const done=tasks.filter(t=>t.done).length;
   const over=tasks.filter(t=>!t.done&&t.date&&du(t.date)<0).length;
@@ -1386,6 +1368,8 @@ function attachCtx(row, taskId){
   // タップ（t-bodyタップで編集メニュー）
   row.addEventListener('click', e=>{
     if(longPressActive){ longPressActive=false; return; }
+    if(e.target.closest('.chk')) return; // チェックボックスはグローバル委任に任せる
+    if(e.target.closest('[data-comm]')) return; // コメントもグローバル委任に任せる
     const ed = e.target.closest('.t-body');
     if(ed){ showCtx(null, null, taskId, row); }
   });
@@ -1555,14 +1539,46 @@ function copyLine(){
     .then(()=>alert('コピーしました！LINEに貼り付けてね'));
 }
 
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); closeFlea(); } });
 document.getElementById('myName').addEventListener('input', ()=>{
   try { localStorage.setItem(LS_NAME, document.getElementById('myName').value); } catch(e){}
 });
+
+// ---- グローバルイベント委任（1回だけ登録）----
+document.addEventListener('click', e=>{
+  // フリマモーダル：背景クリックで閉じる
+  if(e.target.id === 'fleaOverlay'){ closeFlea(); return; }
+  // フリマモーダル：閉じるボタン
+  if(e.target.id === 'fleaCloseBtn' || e.target.id === 'fleaCancelBtn'){ closeFlea(); return; }
+  // フリマモーダル：登録ボタン
+  if(e.target.id === 'fleaSaveBtn'){ saveFlea(); return; }
+  // フリマ出品者削除
+  const fleaDel = e.target.closest('[data-fleaid]');
+  if(fleaDel){ deleteFlea(+fleaDel.dataset.fleaid); return; }
+  // チェックボックス（完了切り替え）
+  const chk = e.target.closest('.chk[data-id]');
+  if(chk){
+    const id = +chk.dataset.id;
+    const t = tasks.find(x=>x.id===id);
+    if(t){
+      if(!t.done && !confirm(`「${t.name}」を完了にしますか？`)) return;
+      t.done=!t.done; addLog(`「${t.name}」を${t.done?'完了':'未完了'}に変更`); pushAfterChange(); render();
+    }
+    return;
+  }
+  // コメントボタン
+  const comm = e.target.closest('[data-comm]');
+  if(comm && comm.closest('#tree')){
+    const id = +comm.dataset.comm;
+    if(openComments.has(id)) openComments.delete(id); else openComments.add(id);
+    render();
+    return;
+  }
+});
+
 loadLocal();
 loadFleaLocal();
 // 初回起動: スナップショットとクラウドデータを比較して差分を出す
-// （クラウド同期のpollCloud内で差分計算されるので、ここでは前回スナップショットとlocalStorageを比較）
 {
   const snap = loadSnapshot();
   if(snap && tasks.length){
