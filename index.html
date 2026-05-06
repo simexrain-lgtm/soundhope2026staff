@@ -202,7 +202,11 @@ body {
   position: relative;
 }
 .task-row:hover { background: var(--bg2); }
+.task-row.done { background: #131313; opacity: 0.6; }
+.task-row.done:hover { background: #1a1a1a; opacity: 0.8; }
 .task-row.done .t-name { text-decoration: line-through; color: var(--text3); }
+.task-row.done .t-person, .task-row.done .t-memo { color: var(--text3); opacity: 0.6; }
+.task-row.done .chk { filter: grayscale(0.5); }
 .chk {
   width: 17px; height: 17px;
   border: 1.5px solid var(--border2);
@@ -412,6 +416,45 @@ body {
   cursor: pointer;
   font-family: 'Noto Sans JP', sans-serif;
 }
+
+/* FLEA MODAL */
+.flea-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75); z-index: 150;
+  align-items: flex-start; justify-content: center;
+  padding: 20px 16px 40px; overflow-y: auto;
+}
+.flea-overlay.open { display: flex; }
+.flea-modal {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: var(--radius); width: 100%; max-width: 560px; overflow: hidden;
+}
+.flea-modal-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 18px; border-bottom: 1px solid var(--border); background: var(--bg3);
+}
+.flea-modal-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; color:var(--accent); flex:1; }
+.flea-count-badge { font-size:11px; background:var(--bg2); border:1px solid var(--border2); color:var(--text2); border-radius:20px; padding:3px 10px; }
+.flea-body { padding: 16px; }
+.flea-list { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+.flea-card { background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; display:flex; gap:12px; align-items:flex-start; }
+.flea-num { font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--accent); line-height:1; width:28px; flex-shrink:0; text-align:center; margin-top:1px; }
+.flea-info { flex:1; min-width:0; }
+.flea-name { font-size:13px; font-weight:700; color:var(--text); }
+.flea-item { font-size:12px; color:var(--text2); margin-top:3px; }
+.flea-contact { font-size:11px; color:var(--text3); margin-top:3px; }
+.flea-del { background:transparent; border:1px solid var(--border2); color:var(--text3); border-radius:var(--radius-sm); padding:4px 8px; font-size:11px; cursor:pointer; transition:border-color 0.15s,color 0.15s; flex-shrink:0; }
+.flea-del:hover { border-color:var(--red); color:var(--red); }
+.flea-empty { text-align:center; padding:24px; color:var(--text3); font-size:13px; }
+.flea-form-title { font-size:12px; font-weight:700; color:var(--text2); margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); letter-spacing:0.5px; }
+.flea-form { display:flex; flex-direction:column; gap:10px; }
+.flea-form input, .flea-form textarea { width:100%; font-size:13px; padding:8px 10px; border-radius:var(--radius-sm); border:1px solid var(--border2); background:var(--bg3); color:var(--text); font-family:'Noto Sans JP',sans-serif; transition:border-color 0.15s; }
+.flea-form input:focus, .flea-form textarea:focus { outline:none; border-color:var(--accent); }
+.flea-form textarea { resize:vertical; min-height:56px; line-height:1.5; }
+.flea-form label { font-size:11px; color:var(--text3); display:block; margin-bottom:3px; }
+.flea-form-btns { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; }
+.flea-btn-open { font-size:11px; padding:3px 10px; height:26px; border-radius:var(--radius-sm); border:1px solid #854d0e; background:rgba(249,115,22,0.1); color:var(--accent2); cursor:pointer; font-family:'Noto Sans JP',sans-serif; white-space:nowrap; transition:background 0.15s; }
+.flea-btn-open:hover { background:rgba(249,115,22,0.2); }
 
 /* LINE OUT */
 .line-out {
@@ -649,6 +692,31 @@ body {
   <div class="ctx-item danger" onclick="ctxDoDelete()">🗑 削除する</div>
 </div>
 
+<!-- FLEA MODAL -->
+<div class="flea-overlay" id="fleaOverlay" onclick="if(event.target===this)closeFlea()">
+  <div class="flea-modal">
+    <div class="flea-modal-header">
+      <span style="font-size:18px">🛒</span>
+      <span class="flea-modal-title">フリマ出品者リスト</span>
+      <span class="flea-count-badge" id="fleaCountBadge">0 / 20組</span>
+      <button class="flea-del" onclick="closeFlea()" style="font-size:14px;padding:4px 10px">✕</button>
+    </div>
+    <div class="flea-body">
+      <div class="flea-list" id="fleaList"></div>
+      <div class="flea-form-title">＋ 出品者を登録</div>
+      <div class="flea-form">
+        <div><label>出品者名 *</label><input id="fName" type="text" placeholder="例：田中 花子"></div>
+        <div><label>出品情報（出品物・ジャンルなど）</label><textarea id="fItem" placeholder="例：ハンドメイドアクセサリー、古着など"></textarea></div>
+        <div><label>連絡先（電話 / LINE / Instagram など）</label><input id="fContact" type="text" placeholder="例：090-XXXX-XXXX"></div>
+        <div class="flea-form-btns">
+          <button class="btn-cancel" onclick="closeFlea()">閉じる</button>
+          <button class="btn-save" onclick="saveFlea()">登録する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal">
@@ -665,9 +733,105 @@ body {
   </div>
 </div>
 
+<footer style="border-top:1px solid var(--border);padding:16px 20px;text-align:center;background:var(--bg2);">
+  <a href="https://snowy-paper-d272.simexrain.workers.dev" target="_blank" rel="noopener"
+     style="display:inline-flex;align-items:center;gap:8px;color:var(--accent);font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;text-decoration:none;padding:10px 24px;border:1px solid var(--accent);border-radius:8px;transition:background 0.15s;"
+     onmouseover="this.style.background='rgba(249,115,22,0.1)'" onmouseout="this.style.background='transparent'">
+    🌐 SOUNDHOPE FEST. 公式サイトへ
+  </a>
+</footer>
+
 <script>
-// ---- STORAGE KEY ----
-const LS_KEY      = 'soundhope2026_tasks';
+const LS_FLEA     = 'soundhope2026_flea';
+const CLOUD_FLEA  = 'soundhope2026_flea_shared';
+let fleaEntries   = [];   // [{id, name, item, contact, registeredAt}]
+let fleaNid       = 1;
+
+function saveFleaLocal(){
+  try { localStorage.setItem(LS_FLEA, JSON.stringify({fleaEntries, fleaNid})); } catch(e){}
+}
+function loadFleaLocal(){
+  try {
+    const d = localStorage.getItem(LS_FLEA);
+    if(d){ const p=JSON.parse(d); fleaEntries=p.fleaEntries||[]; fleaNid=p.fleaNid||1; }
+  } catch(e){}
+}
+async function pushFleaToCloud(){
+  try {
+    await window.storage.set(CLOUD_FLEA, JSON.stringify({fleaEntries, fleaNid, updatedAt: Date.now()}), true);
+  } catch(e){}
+}
+async function pollFleaCloud(){
+  try {
+    const r = await window.storage.get(CLOUD_FLEA, true);
+    if(!r) return;
+    const d = JSON.parse(r.value);
+    if(!d || !d.updatedAt) return;
+    // ローカルより新しければ上書き
+    const localTs = fleaEntries._cloudTs || 0;
+    if(d.updatedAt > localTs){
+      fleaEntries = d.fleaEntries||[]; fleaNid = d.fleaNid||1;
+      fleaEntries._cloudTs = d.updatedAt;
+      saveFleaLocal();
+      renderFleaList();
+    }
+  } catch(e){}
+}
+
+function openFlea(){
+  pollFleaCloud();
+  renderFleaList();
+  document.getElementById('fleaOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('fName').focus(), 50);
+}
+function closeFlea(){
+  document.getElementById('fleaOverlay').classList.remove('open');
+}
+function renderFleaList(){
+  const list = document.getElementById('fleaList');
+  const badge = document.getElementById('fleaCountBadge');
+  if(!list) return;
+  badge.textContent = `${fleaEntries.length} / 20組`;
+  if(!fleaEntries.length){
+    list.innerHTML = '<div class="flea-empty">まだ登録はありません</div>';
+    return;
+  }
+  list.innerHTML = fleaEntries.map((e,i)=>`
+    <div class="flea-card">
+      <div class="flea-num">${i+1}</div>
+      <div class="flea-info">
+        <div class="flea-name">${e.name}</div>
+        ${e.item ? `<div class="flea-item">📦 ${e.item}</div>` : ''}
+        ${e.contact ? `<div class="flea-contact">📞 ${e.contact}</div>` : ''}
+        <div class="flea-contact" style="margin-top:4px;color:var(--text3)">${e.registeredAt}</div>
+      </div>
+      <button class="flea-del" onclick="deleteFlea(${e.id})">削除</button>
+    </div>
+  `).join('');
+}
+function saveFlea(){
+  const name = document.getElementById('fName').value.trim();
+  if(!name){ document.getElementById('fName').focus(); return; }
+  if(fleaEntries.length >= 20){ alert('出品者は最大20組までです'); return; }
+  const entry = {
+    id: fleaNid++,
+    name,
+    item: document.getElementById('fItem').value.trim(),
+    contact: document.getElementById('fContact').value.trim(),
+    registeredAt: new Date().toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})
+  };
+  fleaEntries.push(entry);
+  document.getElementById('fName').value='';
+  document.getElementById('fItem').value='';
+  document.getElementById('fContact').value='';
+  saveFleaLocal(); pushFleaToCloud(); renderFleaList();
+}
+function deleteFlea(id){
+  const e = fleaEntries.find(x=>x.id===id);
+  if(!e || !confirm(`「${e.name}」を削除しますか？`)) return;
+  fleaEntries = fleaEntries.filter(x=>x.id!==id);
+  saveFleaLocal(); pushFleaToCloud(); renderFleaList();
+}
 const LS_LOG      = 'soundhope2026_log';
 const LS_NAME     = 'soundhope2026_name';
 const LS_SNAPSHOT = 'soundhope2026_snapshot'; // 前回既読時のスナップショット
@@ -962,14 +1126,14 @@ let tasks = [
   {id:17,cat:'staff',name:'フリマエリア担当を決める',person:'〆',date:'2026-05-31',done:false,memo:'',comments:[]},
   {id:18,cat:'staff',name:'駐車場・誘導担当を決める',person:'〆',date:'2026-06-01',done:false,memo:'',comments:[]},
   {id:19,cat:'staff',name:'スタッフへの役割説明・当日タイムライン共有',person:'〆',date:'2026-06-20',done:false,memo:'',comments:[]},
-  {id:20,cat:'flea',name:'フリマ出店者の募集告知',person:'〆',date:'2026-05-25',done:false,memo:'',comments:[]},
-  {id:21,cat:'flea',name:'出店者リスト・配置図作成',person:'〆',date:'2026-06-10',done:false,memo:'',comments:[]},
-  {id:22,cat:'flea',name:'出店者への注意事項（ゴミ・撤収）説明',person:'〆',date:'2026-06-20',done:false,memo:'',comments:[]},
-  {id:23,cat:'kitchen',name:'キッチンカー出店者の募集・声がけ',person:'〆',date:'2026-05-25',done:false,memo:'',comments:[]},
-  {id:24,cat:'kitchen',name:'出店台数・配置スペースの確認',person:'〆',date:'2026-06-01',done:false,memo:'給排水・電源が必要か確認',comments:[]},
-  {id:25,cat:'kitchen',name:'出店者との契約・規約確認',person:'〆',date:'2026-06-10',done:false,memo:'',comments:[]},
-  {id:26,cat:'kitchen',name:'当日の搬入・撤収時間の調整',person:'〆',date:'2026-06-15',done:false,memo:'早朝搬入の場合は鍵の手配も',comments:[]},
-  {id:27,cat:'kitchen',name:'ゴミ・排水処理ルール周知',person:'〆',date:'2026-06-20',done:false,memo:'',comments:[]},
+  {id:20,cat:'flea',name:'フリマ出店者の募集告知',person:'アキラ',date:'2026-05-25',done:false,memo:'',comments:[]},
+  {id:21,cat:'flea',name:'出店者リスト・配置図作成',person:'アキラ',date:'2026-06-10',done:false,memo:'',comments:[]},
+  {id:22,cat:'flea',name:'出店者への注意事項（ゴミ・撤収）説明',person:'アキラ',date:'2026-06-20',done:false,memo:'',comments:[]},
+  {id:23,cat:'kitchen',name:'キッチンカー出店者の募集・声がけ',person:'大介',date:'2026-05-25',done:false,memo:'',comments:[]},
+  {id:24,cat:'kitchen',name:'出店台数・配置スペースの確認',person:'大介',date:'2026-06-01',done:false,memo:'給排水・電源が必要か確認',comments:[]},
+  {id:25,cat:'kitchen',name:'出店者との契約・規約確認',person:'大介',date:'2026-06-10',done:false,memo:'',comments:[]},
+  {id:26,cat:'kitchen',name:'当日の搬入・撤収時間の調整',person:'大介',date:'2026-06-15',done:false,memo:'早朝搬入の場合は鍵の手配も',comments:[]},
+  {id:27,cat:'kitchen',name:'ゴミ・排水処理ルール周知',person:'大介',date:'2026-06-20',done:false,memo:'',comments:[]},
   {id:28,cat:'trouble',name:'雨天対策：テント追加確保・中止基準を決める',person:'〆',date:'2026-06-01',done:false,memo:'前日18時時点で判断、基準を明文化',comments:[]},
   {id:29,cat:'trouble',name:'熱中症対策：水・塩・日陰スポット確保',person:'〆',date:'2026-06-15',done:false,memo:'経口補水液も用意',comments:[]},
   {id:30,cat:'trouble',name:'PA・電源トラブル時のバックアップ手順',person:'〆',date:'2026-06-10',done:false,memo:'',comments:[]},
@@ -1080,10 +1244,14 @@ function render(){
 
     const block=document.createElement('div');
     block.className='cat-block';
+    const fleaBtn = cat.id==='flea'
+      ? `<button class="flea-btn-open" onclick="event.stopPropagation();openFlea()">🛒 出品者 ${fleaEntries.length}組</button>`
+      : '';
     block.innerHTML=`
       <div class="cat-header" onclick="toggleCat('${cat.id}')">
         <span class="cat-icon">${cat.icon}</span>
         <span class="cat-title">${cat.label}</span>
+        ${fleaBtn}
         <span class="cat-badge">${doneC}/${allC}</span>
         <span class="cat-arrow${isOpen?' open':''}">▶</span>
       </div>
@@ -1173,7 +1341,10 @@ function render(){
     if(chk){
       const id=+chk.dataset.id;
       const t=tasks.find(x=>x.id===id);
-      if(t){ t.done=!t.done; addLog(`「${t.name}」を${t.done?'完了':'未完了'}に変更`); pushAfterChange(); render(); }
+      if(t){
+        if(!t.done && !confirm(`「${t.name}」を完了にしますか？`)) return;
+        t.done=!t.done; addLog(`「${t.name}」を${t.done?'完了':'未完了'}に変更`); pushAfterChange(); render();
+      }
     } else if(comm){
       const id=+comm.dataset.comm;
       if(openComments.has(id)) openComments.delete(id); else openComments.add(id);
@@ -1389,6 +1560,7 @@ document.getElementById('myName').addEventListener('input', ()=>{
   try { localStorage.setItem(LS_NAME, document.getElementById('myName').value); } catch(e){}
 });
 loadLocal();
+loadFleaLocal();
 // 初回起動: スナップショットとクラウドデータを比較して差分を出す
 // （クラウド同期のpollCloud内で差分計算されるので、ここでは前回スナップショットとlocalStorageを比較）
 {
